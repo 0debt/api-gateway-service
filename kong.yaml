@@ -61,45 +61,34 @@ routes:
 # -----------------------------------------------------------------------------
 # 3. CONSUMERS (Who the policies are for)
 # -----------------------------------------------------------------------------
-# Represent the pricing plans. The `users-service` will be responsible
-# to create a "consumer" in Kong when a user registers.
 consumers:
   - username: plan_free_user
   - username: plan_pro_user
 
 # -----------------------------------------------------------------------------
-# 4. PLUGINS
+# 4. JWT CONFIGURATION (working declaration)
+# -----------------------------------------------------------------------------
+jwt_secrets:
+  - consumer: plan_free_user
+    key: default
+    secret: ${JWT_SECRET}
+    algorithm: HS256
+
+# -----------------------------------------------------------------------------
+# 5. PLUGINS
 # -----------------------------------------------------------------------------
 plugins:
   # --- PLUGIN JWT: Edge Security ---
-  # Centralize JWT validation.
-  # Applied to all routes EXCEPT /auth. We achieve this by associating the plugin
-  # to the services that must be protected.
   - name: jwt
-    # Apply protection to each business service
     service: users-service
-    config:
-      secrets:
-        - secret: ${JWT_SECRET}
   - name: jwt
     service: groups-service
-    config:
-      secrets:
-        - secret: ${JWT_SECRET}
   - name: jwt
     service: expenses-service
-    config:
-      secrets:
-        - secret: ${JWT_SECRET}
   - name: jwt
     service: analytics-service
-    config:
-      secrets:
-        - secret: ${JWT_SECRET}
         
   # --- PLUGIN RATE-LIMITING: Throttling by Pricing Plan ---
-  # Rate Limiting to protect the microservices and apply plans.
-  # Two different rules are created, one for each type of consumer.
   - name: rate-limiting
     consumer: plan_free_user
     config:
@@ -115,8 +104,6 @@ plugins:
       policy: local
 
   # --- PLUGIN CORS: Connection with the Frontend ---
-  # Allow your Next.js app to communicate with the API Gateway.
-  # Applied globally to all routes.
   - name: cors
     config:
       origins:

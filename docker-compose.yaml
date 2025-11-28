@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   api-gateway:
     image: kong/kong-gateway:latest
@@ -7,10 +5,10 @@ services:
     restart: always
     environment:
       KONG_DATABASE: "off"
-      KONG_DECLARATIVE_CONFIG: "/home/kong/kong.yaml"
+      KONG_DECLARATIVE_CONFIG: "./kong.yaml"
       KONG_PROXY_LISTEN: "0.0.0.0:8000"
       JWT_SECRET: "${JWT_SECRET}"
     volumes:
-      - ./kong.yaml:/home/kong/kong.yaml
+      - ./kong.yaml:/kong.yaml
     ports:
       - "3001:8000"

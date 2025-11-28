@@ -1,0 +1,129 @@
+# kong.yaml - Declarative config for 0debt API Gateway
+
+_format_version: "3.0"
+
+# -----------------------------------------------------------------------------
+# 1. SERVICES
+# -----------------------------------------------------------------------------
+services:
+  - name: users-service
+    url: http://users-service:3000
+
+  - name: groups-service
+    url: http://groups-service:3000
+
+  - name: expenses-service
+    url: http://expenses-service:3000
+
+  - name: analytics-service
+    url: http://analytics-service:3000
+  
+  # notifications-service is not exposed here because its primary communication is internal (called by users-service) and asynchronous (listening to Redis).
+
+# -----------------------------------------------------------------------------
+# 2. ROUTES 
+# -----------------------------------------------------------------------------
+routes:
+  # --- Routes for USERS-SERVICE ---
+  - name: auth-route
+    service: users-service
+    paths:
+      - /auth
+    strip_path: true
+
+  # Protected by JWT.
+  - name: users-route
+    service: users-service
+    paths:
+      - /users
+    strip_path: true
+
+  # Protected by JWT.
+  - name: groups-route
+    service: groups-service
+    paths:
+      - /groups
+    strip_path: true
+
+  - name: expenses-route
+    service: expenses-service
+    paths:
+      - /expenses
+      - /balances
+    strip_path: true
+    
+  - name: analytics-route
+    service: analytics-service
+    paths:
+      - /budgets
+    strip_path: true
+
+# -----------------------------------------------------------------------------
+# 3. CONSUMERS (Who the policies are for)
+# -----------------------------------------------------------------------------
+# Represent the pricing plans. The `users-service` will be responsible
+# to create a "consumer" in Kong when a user registers.
+consumers:
+  - username: plan_free_user
+  - username: plan_pro_user
+
+# -----------------------------------------------------------------------------
+# 4. PLUGINS
+# -----------------------------------------------------------------------------
+plugins:
+  # --- PLUGIN JWT: Edge Security ---
+  # Centralize JWT validation.
+  # Applied to all routes EXCEPT /auth. We achieve this by associating the plugin
+  # to the services that must be protected.
+  - name: jwt
+    # Apply protection to each business service
+    service: users-service
+    config:
+      secrets:
+        - secret: ${JWT_SECRET}
+  - name: jwt
+    service: groups-service
+    config:
+      secrets:
+        - secret: ${JWT_SECRET}
+  - name: jwt
+    service: expenses-service
+    config:
+      secrets:
+        - secret: ${JWT_SECRET}
+  - name: jwt
+    service: analytics-service
+    config:
+      secrets:
+        - secret: ${JWT_SECRET}
+        
+  # --- PLUGIN RATE-LIMITING: Throttling by Pricing Plan ---
+  # Rate Limiting to protect the microservices and apply plans.
+  # Two different rules are created, one for each type of consumer.
+  - name: rate-limiting
+    consumer: plan_free_user
+    config:
+      minute: 60      
+      hour: 500
+      policy: local
+
+  - name: rate-limiting
+    consumer: plan_pro_user
+    config:
+      minute: 1000   
+      hour: 10000
+      policy: local
+
+  # --- PLUGIN CORS: Connection with the Frontend ---
+  # Allow your Next.js app to communicate with the API Gateway.
+  # Applied globally to all routes.
+  - name: cors
+    config:
+      origins:
+        - http://localhost:3000   
+        - https://www.0debt.xyz   
+        - https://0debt.xyz   
+      methods: [GET, POST, PUT, DELETE, OPTIONS]
+      headers: [Authorization, Content-Type]
+      exposed_headers: [X-RateLimit-Remaining-Minute, X-RateLimit-Remaining-Hour]
+      credentials: true

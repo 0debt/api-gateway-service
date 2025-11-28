@@ -7,7 +7,7 @@ services:
     restart: always
     environment:
       KONG_DATABASE: "off"
-      KONG_DECLARATIVE_CONFIG: "/usr/local/kong/declarative/kong.yaml"
+      KONG_DECLARATIVE_CONFIG: "./usr/local/kong/declarative/kong.yaml"
       KONG_PROXY_LISTEN: "0.0.0.0:8000"
       JWT_SECRET: "${JWT_SECRET}"
     volumes:

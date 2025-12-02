@@ -64,6 +64,7 @@ routes:
 consumers:
   - username: plan_free_user
   - username: plan_pro_user
+  - username: plan_enterprise_user
 
 # -----------------------------------------------------------------------------
 # 4. JWT CONFIGURATION (working declaration)
@@ -71,6 +72,16 @@ consumers:
 jwt_secrets:
   - consumer: plan_free_user
     key: default
+    secret: ${JWT_SECRET}
+    algorithm: HS256
+
+  - consumer: plan_pro_user
+    key: default
+    secret: ${JWT_SECRET}
+    algorithm: HS256
+
+  - consumer: plan_enterprise_user
+    key: default  
     secret: ${JWT_SECRET}
     algorithm: HS256
 
@@ -101,6 +112,13 @@ plugins:
     config:
       minute: 1000   
       hour: 10000
+      policy: local
+
+  - name: rate-limiting
+    consumer: plan_enterprise_user
+    config:
+      minute: 5000   
+      hour: 50000
       policy: local
 
   # --- PLUGIN CORS: Connection with the Frontend ---

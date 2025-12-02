@@ -49,6 +49,10 @@ The gateway implements rate limits based on the user's plan:
 - 1000 requests per minute
 - 10000 requests per hour
 
+**Enterprise Plan:**
+- 5000 request per minute
+- 50000 request per hour
+
 Response headers include information about the limits:
 - `X-RateLimit-Remaining-Minute`
 - `X-RateLimit-Remaining-Hour`

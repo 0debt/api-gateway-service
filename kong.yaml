@@ -3,60 +3,63 @@
 _format_version: "3.0"
 
 # -----------------------------------------------------------------------------
-# 1. SERVICES
+# 1. SERVICES (con prefijo /api/v1 que esperan los backends)
 # -----------------------------------------------------------------------------
 services:
   - name: users-service
-    url: http://users-service:3000
+    url: http://users-service:3000/api/v1
 
   - name: groups-service
-    url: http://groups-service:3000
+    url: http://groups-service:3000/api/v1
 
   - name: expenses-service
-    url: http://expenses-service:3000
+    url: http://expenses-service:3000/api/v1
 
   - name: analytics-service
-    url: http://analytics-service:3000
+    url: http://analytics-service:3000/api/v1
   
   # notifications-service is not exposed here because its primary communication is internal (called by users-service) and asynchronous (listening to Redis).
 
 # -----------------------------------------------------------------------------
-# 2. ROUTES 
+# 2. ROUTES (strip_path: false para mantener el path completo)
 # -----------------------------------------------------------------------------
 routes:
   # --- Routes for USERS-SERVICE ---
+  # Auth route - PUBLIC (no JWT)
   - name: auth-route
     service: users-service
     paths:
       - /auth
-    strip_path: true
+    strip_path: false
 
-  # Protected by JWT.
+  # Users route - PROTECTED by JWT
   - name: users-route
     service: users-service
     paths:
       - /users
-    strip_path: true
+    strip_path: false
 
-  # Protected by JWT.
+  # --- Routes for GROUPS-SERVICE ---
   - name: groups-route
     service: groups-service
     paths:
       - /groups
-    strip_path: true
+    strip_path: false
 
+  # --- Routes for EXPENSES-SERVICE ---
   - name: expenses-route
     service: expenses-service
     paths:
       - /expenses
       - /balances
-    strip_path: true
+    strip_path: false
     
+  # --- Routes for ANALYTICS-SERVICE ---
   - name: analytics-route
     service: analytics-service
     paths:
       - /budgets
-    strip_path: true
+    strip_path: false
 
 # -----------------------------------------------------------------------------
 # 3. CONSUMERS (Who the policies are for)
@@ -89,15 +92,15 @@ jwt_secrets:
 # 5. PLUGINS
 # -----------------------------------------------------------------------------
 plugins:
-  # --- PLUGIN JWT: Edge Security ---
+  # --- PLUGIN JWT: Solo en rutas protegidas (NO en auth-route) ---
   - name: jwt
-    service: users-service
+    route: users-route
   - name: jwt
-    service: groups-service
+    route: groups-route
   - name: jwt
-    service: expenses-service
+    route: expenses-route
   - name: jwt
-    service: analytics-service
+    route: analytics-route
         
   # --- PLUGIN RATE-LIMITING: Throttling by Pricing Plan ---
   - name: rate-limiting
@@ -128,7 +131,7 @@ plugins:
         - http://localhost:3000   
         - https://www.0debt.xyz   
         - https://0debt.xyz   
-      methods: [GET, POST, PUT, DELETE, OPTIONS]
+      methods: [GET, POST, PUT, DELETE, PATCH, OPTIONS]
       headers: [Authorization, Content-Type]
       exposed_headers: [X-RateLimit-Remaining-Minute, X-RateLimit-Remaining-Hour]
       credentials: true

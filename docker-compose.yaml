@@ -11,6 +11,6 @@ services:
       JWT_SECRET: "${JWT_SECRET}"
     volumes:
       - ./kong.yaml:/tmp/kong.yaml.template:ro
-    command: /bin/sh -c "sed 's|\$${JWT_SECRET}|'\"$$JWT_SECRET\"'|g' /tmp/kong.yaml.template > /tmp/kong.yaml && /docker-entrypoint.sh kong docker-start"
+    command: /bin/sh -c "sed 's|\$${JWT_SECRET}|'\"$$JWT_SECRET\"'|g' /tmp/kong.yaml.template > /tmp/kong.yaml && kong docker-start"
     ports:
       - "3001:8000"

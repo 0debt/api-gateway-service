@@ -3,7 +3,7 @@
 _format_version: "3.0"
 
 # -----------------------------------------------------------------------------
-# 1. SERVICES (con prefijo /api/v1 que esperan los backends)
+# 1. SERVICES
 # -----------------------------------------------------------------------------
 services:
   - name: users-service
@@ -16,12 +16,14 @@ services:
     url: http://expenses-service:3000/api/v1
 
   - name: analytics-service
-    url: http://analytics-service:3000/api/v1
+    # The analytics-service exposes routes under /v1/*
+    # We keep the base without /api/v1 to avoid duplicating prefixes in the upstream.
+    url: http://analytics-service:3000
   
   # notifications-service is not exposed here because its primary communication is internal (called by users-service) and asynchronous (listening to Redis).
 
 # -----------------------------------------------------------------------------
-# 2. ROUTES (strip_path: false para mantener el path completo)
+# 2. ROUTES (strip_path: false to keep the full path)
 # -----------------------------------------------------------------------------
 routes:
   # --- Routes for USERS-SERVICE ---
@@ -58,7 +60,9 @@ routes:
   - name: analytics-route
     service: analytics-service
     paths:
-      - /budgets
+      - /v1/budgets
+      - /v1/health
+      - /v1/internal/users
     strip_path: false
 
 # -----------------------------------------------------------------------------
@@ -92,7 +96,7 @@ jwt_secrets:
 # 5. PLUGINS
 # -----------------------------------------------------------------------------
 plugins:
-  # --- PLUGIN JWT: Solo en rutas protegidas (NO en auth-route) ---
+  # --- PLUGIN JWT: Only on protected routes (NOT on auth-route) ---
   - name: jwt
     route: users-route
   - name: jwt

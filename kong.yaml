@@ -86,17 +86,17 @@ consumers:
 jwt_secrets:
   - consumer: plan_free_user
     key: free
-    secret: ${JWT_SECRET}
+    secret: "{vault://env/JWT_SECRET}"
     algorithm: HS256
 
   - consumer: plan_pro_user
     key: pro
-    secret: ${JWT_SECRET}
+    secret: "{vault://env/JWT_SECRET}"
     algorithm: HS256
 
   - consumer: plan_enterprise_user
     key: enterprise
-    secret: ${JWT_SECRET}
+    secret: "{vault://env/JWT_SECRET}"
     algorithm: HS256
 
 # -----------------------------------------------------------------------------

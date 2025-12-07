@@ -1,90 +1,64 @@
 # API Gateway - 0debt
 
-API Gateway built with Kong Gateway for the 0debt application. This gateway centralizes routing, authentication, rate limiting, and CORS for the platform's microservices.
+Kong-based, DB-less gateway to front 0debt microservices with JWT auth, per-plan rate limiting, and CORS.
 
-## 🏗️ Architecture
-
-This API Gateway acts as a single entry point for the following microservices:
-
-- **users-service** - User management and authentication
-- **groups-service** - Group management
-- **expenses-service** - Expense and balance management
-- **analytics-service** - Analytics and budgets
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Docker and Docker Compose installed
-- `JWT_SECRET` environment variable configured
-
-## 📋 Configured Routes
-
-| Route | Service | Description |
-|------|---------|-------------|
-| `/auth` | users-service | Authentication (public) |
-| `/users` | users-service | User management (protected) |
-| `/groups` | groups-service | Group management (protected) |
-| `/expenses` | expenses-service | Expense management (protected) |
-| `/balances` | expenses-service | Balance queries (protected) |
-| `/budgets` | analytics-service | Analytics and budgets (protected) |
-
-## 🔒 Security
-
-### JWT Authentication
-
-- All routes except `/auth` require a valid JWT token
-- The JWT secret is configured via the `JWT_SECRET` environment variable
-- The `Authorization: Bearer <token>` header must be included in protected requests
-
-### Rate Limiting
-
-The gateway implements rate limits based on the user's plan:
-
-**Free Plan:**
-- 60 requests per minute
-- 500 requests per hour
-
-**Pro Plan:**
-- 1000 requests per minute
-- 10000 requests per hour
-
-**Enterprise Plan:**
-- 5000 request per minute
-- 50000 request per hour
-
-Response headers include information about the limits:
-- `X-RateLimit-Remaining-Minute`
-- `X-RateLimit-Remaining-Hour`
-
-### CORS
-
-Configured to allow requests from:
-- `http://localhost:3000` (development)
-- `https://www.0debt.xyz` (production)
-- `https://0debt.xyz` (production)
-
-Allowed methods: `GET`, `POST`, `PUT`, `DELETE`, `OPTIONS`
-
-## ⚙️ Configuration
-
-### Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `JWT_SECRET` | Secret for validating JWT tokens | Yes |
-
-## 📁 Project Structure
+## 📁 Project structure
 
 ```
 api-gateway/
-├── docker-compose.yaml  # Docker Compose configuration
-├── kong.yaml            # Kong declarative configuration
-└── README.md            # This file
+├── .github/
+│   └── workflows/
+│       └── deploy.yaml   # Build & push image + trigger Coolify
+├── Dockerfile            # Kong image with declarative config
+├── kong.yaml             # Declarative services, routes, and plugins
+├── .gitignore
+└── README.md
 ```
+
+## ⚙️ Key configuration
+
+- `kong.yaml` defines services, routes, and JWT/rate-limiting/CORS plugins.
+- `Dockerfile` copies `kong.yaml` as a template and replaces `{vault://env/JWT_SECRET}` at runtime via `JWT_SECRET`.
+- `deploy.yaml` builds and pushes the multi-arch image to GHCR and triggers the Coolify webhook.
+
+### Environment variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `JWT_SECRET` | Injected at startup to validate tokens | Yes |
+
+## 🚀 Quick start
+
+Build and run locally:
+
+```
+docker build -t api-gateway .
+docker run -p 8000:8000 -e JWT_SECRET=super-secret api-gateway
+```
+
+Kong is exposed at `http://localhost:8000`.
+
+## 📋 Services and routes
+
+| Path | Service | Notes |
+|------|---------|-------|
+| `/auth` | users-service | Public (no JWT) |
+| `/users` | users-service | JWT protected |
+| `/api/groups` | groups-service | JWT protected |
+| `/expenses`, `/balances` | expenses-service | JWT protected |
+| `/v1/budgets`, `/v1/health`, `/v1/internal/users` | analytics-service | JWT protected |
+| `/notifications`, `/preferences` | notifications-service | JWT protected |
+
+## 🔒 Security and limits
+
+- **JWT**: required on all routes except `/auth`; use `Authorization: Bearer <token>`.
+- **Rate limiting** per plan:
+  - Free: 60/min, 500/hour.
+  - Pro: 1000/min, 10000/hour.
+  - Enterprise: 5000/min, 50000/hour.
+- **CORS**: allowed origins `http://localhost:3000`, `https://www.0debt.xyz`, `https://0debt.xyz`; methods `GET, POST, PUT, DELETE, PATCH, OPTIONS`; exposed headers `X-RateLimit-Remaining-Minute` and `X-RateLimit-Remaining-Hour`.
 
 ## 📝 Notes
 
-- The `notifications-service` is not exposed in the gateway as its communication is primarily internal (called by `users-service`) and asynchronous (listening to Redis)
-- The configuration is declarative (DB-less mode), so it doesn't require a database
-- Consumers (plans) are created dynamically by the `users-service` when a user registers
+- Declarative (DB-less) configuration, no database needed.
+- Plan consumers can be managed externally; the gateway enforces the configured policies.

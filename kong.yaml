@@ -44,7 +44,7 @@ routes:
   - name: groups-route
     service: groups-service
     paths:
-      - /api/groups
+      - /groups
     strip_path: false
 
   # --- Routes for EXPENSES-SERVICE ---

@@ -53,6 +53,7 @@ routes:
     paths:
       - /expenses
       - /balances
+      - /settlements
     strip_path: false
     
   # --- Routes for ANALYTICS-SERVICE ---
